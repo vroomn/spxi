@@ -49,7 +49,7 @@ Each bit of this section of memory is a different configuration flag, as follows
 1. Run Length Encoding -> 1 if encoded, 0 if not. Means the ordered pixel index makes use of RLE store data.
 2. 8 or 16 bits are allocated for the color ID's, giving more possible colors but taking up more storage. 0 corresponds to 8 bits (1 byte) and 1 corresponds to 16 bits (2 Bytes).
 
-All bytes beyond this should be zero and ignored.
+All bits beyond this should be zero and ignored.
 
 ## Color ID definition
 The color ID is comprised of two components: the ID number and the corresponding color. The number of possible ID's is set in the flags section of the header, 256 with 8 bit or 65,536 with 16 bit, 16 is a highly unlikely flag due to the intent of the format.

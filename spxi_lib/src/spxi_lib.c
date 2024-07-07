@@ -22,6 +22,69 @@ int suffixCheck(const char *path) {
     return 0;
 }
 
+typedef struct _RGBA_Color {
+    BYTE red;
+    BYTE green;
+    BYTE blue;
+    BYTE alpha;
+} RGBA_Color;
+
+typedef struct _ColorIDNode {
+    RGBA_Color color;
+    struct _ColorIDNode *next;
+} ColorIDNode;
+
+typedef struct _LLHead {
+    ColorIDNode *next;
+} LLHead;
+
+int appendCIDNode(LLHead *list, RGBA_Color color) {
+    // Check that the list might need initialization and if so fill
+    if (list->next == NULL){
+        list->next = malloc(sizeof(ColorIDNode));
+        list->next->color = color;
+        list->next->next = NULL;
+
+        return 0;
+    }
+    
+    ColorIDNode *curNode = list->next;
+
+    // Traverse list to end
+    while (curNode->next != NULL) {
+        curNode = curNode->next;
+    }
+
+    curNode->next = malloc(sizeof(ColorIDNode));
+    if (curNode->next == NULL) {
+        return ALLOCATION_FAILED;
+    }
+
+    curNode->next->color = color;
+    curNode->next->next = NULL;
+
+    return 0;
+}
+
+int destroyList(LLHead *list) {
+    ColorIDNode *curTarget = list->next;
+
+    if (curTarget == NULL) {
+        return 0;
+    }
+
+    ColorIDNode *nextTarget;
+    while (curTarget->next != NULL) {
+        nextTarget = curTarget->next;
+        free(curTarget);
+        curTarget = nextTarget;
+    }
+    
+    free(curTarget);
+
+    return 0;
+}
+
 int spxiWrite(const char *path, char flags, SPXIHeader header) {
     if (suffixCheck(path) == INVALID_SUFFIX) {
         return INVALID_SUFFIX;
@@ -61,13 +124,22 @@ int spxiWrite(const char *path, char flags, SPXIHeader header) {
     memcpy_s(&headerBuf[30], 38, &header.bitmask.alpha, 4);
     headerBuf[34] = header.flags;
 
-    ULONG bytesWritten = 0;
     WINBOOL writeErr = WriteFile(fileHandle, &headerBuf, 35, NULL, NULL);
     if (writeErr == 0) {
         if (GetLastError() != ERROR_IO_PENDING) {
             return GENERIC_WINDOWS_ERR;
         }
     }
+    
+    // Write the Color ID Section
+    
+    RGBA_Color testColor = {
+        255,
+        254,
+        253,
+        252
+    };
+
     
 
     CloseHandle(fileHandle);

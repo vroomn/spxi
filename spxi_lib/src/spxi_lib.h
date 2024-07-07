@@ -5,6 +5,9 @@
 #define FILE_EXISTS -2
 #define INVALID_SUFFIX -3
 
+// Linked list errors
+#define ALLOCATION_FAILED -4
+
 /* Specifies byte flags for controlling write logic*/
 // Allows the program to overwrite existing files
 #define OVERWRITE_OK 0x1
