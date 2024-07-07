@@ -8,7 +8,11 @@ project(spxi_lib
 
 set(CMAKE_C_STANDARD 23)
 
-set(CMAKE_C_FLAGS "-Wall")
+# Dev config flags
+set(COMPILE_FLAGS "-Og -g3 -fsanitize=address -fno-omit-frame-pointer -Wall -Werror")
+
+# Release config flags
+#set(COMPILE_FLAGS "-Os -fwrapv -fomit-frame-pointer -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables")
 
 add_library(spxi_lib src/spxi_lib.c)
 
