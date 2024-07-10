@@ -22,38 +22,36 @@ int suffixCheck(const char *path) {
     return 0;
 }
 
-typedef struct _RGBA_Color {
-    BYTE red;
-    BYTE green;
-    BYTE blue;
-    BYTE alpha;
-} RGBA_Color;
-
 typedef struct _ColorIDNode {
     RGBA_Color color;
+    unsigned int ID;
     struct _ColorIDNode *next;
 } ColorIDNode;
 
 typedef struct _LLHead {
     ColorIDNode *next;
+    size_t size;
+    ColorIDNode *last;
 } LLHead;
 
-int appendCIDNode(LLHead *list, RGBA_Color color) {
+#define LLHEAD_INIT (LLHead){NULL, 0, NULL};
+
+int appendCIDNode(LLHead *list, RGBA_Color color, unsigned int ID) {
+    list->size++;
+
     // Check that the list might need initialization and if so fill
     if (list->next == NULL){
         list->next = malloc(sizeof(ColorIDNode));
+        list->last = list->next;
+
         list->next->color = color;
+        list->next->ID = ID;
         list->next->next = NULL;
 
         return 0;
     }
     
-    ColorIDNode *curNode = list->next;
-
-    // Traverse list to end
-    while (curNode->next != NULL) {
-        curNode = curNode->next;
-    }
+    ColorIDNode *curNode = list->last;
 
     curNode->next = malloc(sizeof(ColorIDNode));
     if (curNode->next == NULL) {
@@ -61,9 +59,49 @@ int appendCIDNode(LLHead *list, RGBA_Color color) {
     }
 
     curNode->next->color = color;
+    curNode->next->ID = ID;
     curNode->next->next = NULL;
 
+    list->last = curNode->next;
+
     return 0;
+}
+
+// Returns 0 if none present, returns 1 if present
+int findCID(LLHead *list, RGBA_Color color) {
+    if (list->next != NULL){
+        ColorIDNode *curNode = list->next;
+        int iter = 0;
+        do {
+            if (curNode->color.red   == color.red   &&
+                curNode->color.green == color.green &&
+                curNode->color.blue  == color.blue  &&
+                curNode->color.alpha == color.alpha
+            ) {
+                return iter;
+            }
+
+            iter++;
+            curNode = curNode->next;
+        } while (curNode != NULL) ;
+    }
+
+    return -1;
+}
+
+int getColorFromIdx(LLHead *list, int idx, RGBA_Color *destInfo) {
+    if (list->next != NULL) {
+        ColorIDNode *curNode = list->next;
+
+        for (size_t i = 0; i < idx; i++) {
+            curNode = curNode->next;
+        }
+
+        *destInfo = curNode->color;
+        return 0;
+    }
+
+    return 1; // Not present
 }
 
 int destroyList(LLHead *list) {
@@ -82,10 +120,12 @@ int destroyList(LLHead *list) {
     
     free(curTarget);
 
+    *list = LLHEAD_INIT;
+
     return 0;
 }
 
-int spxiWrite(const char *path, char flags, SPXIHeader header) {
+int spxiWrite(const char *path, char flags, SPXIHeader header, RGBA_Color *pixels, unsigned int numPixels) {
     if (suffixCheck(path) == INVALID_SUFFIX) {
         return INVALID_SUFFIX;
     }
@@ -113,7 +153,7 @@ int spxiWrite(const char *path, char flags, SPXIHeader header) {
     BYTE headerBuf[35] = {
         0x73, 0x70, 0x78, 0x69, // Magic number
         header.version,
-        header.fileSize, SPACER_3_BYTES,
+        35, SPACER_3_BYTES,                 //FIXME: Calculate file size for real!!!
         header.width,    SPACER_3_BYTES,
         header.height,   SPACER_3_BYTES,
         header.BPP };
@@ -131,16 +171,73 @@ int spxiWrite(const char *path, char flags, SPXIHeader header) {
         }
     }
     
+    LLHead idList = LLHEAD_INIT;
+
+    int IDDepth = 1;
+    if (flags & ID_DEPTH == 1) { // Depth is 2 byte
+        IDDepth = 2;
+    }
+
+    BYTE *pxIdxs = malloc(numPixels * IDDepth);
+
     // Write the Color ID Section
-    
-    RGBA_Color testColor = {
-        255,
-        254,
-        253,
-        252
-    };
+    int IDTicker = 0;
+    for (size_t i = 0; i < numPixels; i++) {
+        Pixel targetPixel = pixels[i];
+
+        int searchedCID = findCID(&idList, targetPixel);
+        if (searchedCID == -1) {
+            appendCIDNode(&idList, targetPixel, IDTicker);
+            pxIdxs[i] = IDTicker;
+            IDTicker++;
+            continue;
+        }
+
+        pxIdxs[i] = searchedCID;
+    }
 
     
+    int CIDBufSize = (IDTicker * (IDDepth + header.BPP)) + IDDepth;
+    BYTE *CIDBuf = malloc(CIDBufSize);
+    memset(CIDBuf, 0, CIDBufSize); // Zero the memory
+
+    // Write the number of color - ID pairs
+    memset(CIDBuf, IDTicker, IDDepth);
+    
+    int bppDivisior = 3;
+    if (header.BPP == 32) {
+        bppDivisior = 4;
+    }
+
+    // Calculate and configure write to file for the color ID definitions
+    for (size_t i = 0; i < IDTicker; i++) {
+        memset(&CIDBuf[(IDDepth*(i+1)) + ((header.BPP/8)*i)], i, IDDepth);
+
+        RGBA_Color tickerColor;
+        getColorFromIdx(&idList, i, &tickerColor);
+        memset(&CIDBuf[(IDDepth*(i+2)) + ((header.BPP/8)*i)], tickerColor.red, 1); //FIXME: Not actually accounting for ID
+        memset(&CIDBuf[(IDDepth*(i+2)) + ((header.BPP/8)*i) + 1], tickerColor.green, 1);
+        memset(&CIDBuf[(IDDepth*(i+2)) + ((header.BPP/8)*i) + 2], tickerColor.blue, 1);
+        if (bppDivisior = 4) {
+            memset(&CIDBuf[(IDDepth*(i+2)) + ((header.BPP/8)*i) + 3], tickerColor.blue, 1);
+        }
+    }
+
+    writeErr = WriteFile(fileHandle, CIDBuf, (IDTicker * (IDDepth + (header.BPP/8))) + IDDepth, NULL, NULL);
+    if (writeErr == 0) {
+        if (GetLastError() != ERROR_IO_PENDING) {
+            return GENERIC_WINDOWS_ERR;
+        }
+    }
+    destroyList(&idList); // TODO: Take into Visual Studio and double confirm no memory leak
+
+    writeErr = WriteFile(fileHandle, pxIdxs, numPixels * IDDepth, NULL, NULL);
+    if (writeErr == 0) {
+        if (GetLastError() != ERROR_IO_PENDING) {
+            return GENERIC_WINDOWS_ERR;
+        }
+    }
+    free(pxIdxs);
 
     CloseHandle(fileHandle);
     return 0;

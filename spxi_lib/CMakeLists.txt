@@ -6,10 +6,10 @@ project(spxi_lib
         VERSION 0.01.00
         LANGUAGES C)
 
-set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD 11)
 
 # Dev config flags
-set(COMPILE_FLAGS "-Og -g3 -fsanitize=address -fno-omit-frame-pointer -Wall -Werror")
+#set(COMPILE_FLAGS "-Og -g3 -fsanitize=address -fno-omit-frame-pointer -Wall -Werror")
 
 # Release config flags
 #set(COMPILE_FLAGS "-Os -fwrapv -fomit-frame-pointer -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables")
@@ -20,7 +20,7 @@ add_library(spxi_lib src/spxi_lib.c)
 # Remove the "lib" prefix off of the library name
 set_target_properties(spxi_lib PROPERTIES PREFIX "")
 # Set the name to simply "spxi"
-set_target_properties(spxi_lib PROPERTIES OUTPUT_NAME "spxi")
+set_target_properties(spxi_lib PROPERTIES OUTPUT_NAME "spxi_static")
 # Set the file extention to ".lib", the windows equivalent of .a, makes no difference in actual running of the program
 set_target_properties(spxi_lib PROPERTIES SUFFIX ".lib")
 

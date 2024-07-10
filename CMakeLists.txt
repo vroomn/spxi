@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.27.0)
 project(spxi_testing
         LANGUAGES C)
 
-set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD 11)
 
 add_subdirectory(spxi_lib)
 

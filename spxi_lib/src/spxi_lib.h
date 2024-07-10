@@ -38,7 +38,6 @@ typedef struct _RGBA_BITMASK
 typedef struct _SPXIHeader
 {
     BYTE version;
-    DWORD fileSize;
     DWORD width;
     DWORD height;
     BYTE BPP;
@@ -49,8 +48,15 @@ typedef struct _SPXIHeader
 #define RLE_ENABLED 0x1
 #define ID_DEPTH 0x2
 
+typedef struct _RGBA_Color {
+    BYTE red;
+    BYTE green;
+    BYTE blue;
+    BYTE alpha;
+} RGBA_Color, Pixel;
+
 /* Currently only writes to unique files, not to existing ones 
    TODO: Write system to override files if present w/ different func*/
-extern int spxiWrite(const char *path, char flags, SPXIHeader header);
+extern int spxiWrite(const char *path, char flags, SPXIHeader header, RGBA_Color *pixels, unsigned int numPixels);
 
 #endif
