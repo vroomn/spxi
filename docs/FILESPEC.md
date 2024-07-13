@@ -7,7 +7,7 @@ Backwards compatability will be preserved to the extent it doesn't impact the si
 The file is broken into three primary components: the header, Color ID Definition, and the ordered pixel index. The header is the same as other files, containing important metadata about the file such as file size, BPP, version, etc. The Color ID Definitions comes from the notion pixel art has a limited color pallate, and therefore a limited number of colors, meaning there is gains to be had in terms of memory to assign each color to an index. The pixel index is an arbitary length series of indexes that when pieced together will form the stored image. The pixel index can use of run length encoding if the file creator deemed it worthwile (flag within the header)
 
 ### A Small Note for Endianness
-Data is stored in big-endian to ease the development / debugging process. This applies to both the header and pixel data.
+Data is stored in little-endian, due to the fact it's rather universal.
 
 ## Header
 ### Magic Number
@@ -19,6 +19,10 @@ __Bytes: 1__
 The version of the file will be provided as one of these (only one at time of writing):
 1. 0x0 -> Version 0.1 [Current]
 
+### File Size
+__Bytes: 4__  
+The size of the file, header included
+
 ### Width
 __Bytes: 4__  
 The width of the image in pixels
@@ -26,10 +30,6 @@ The width of the image in pixels
 ### Height
 __Bytes: 4__  
 The height of the image in pixels
-
-### File Size
-__Bytes: 4__  
-The size of the file, header included
 
 ### Bits Per Pixel
 __Bytes: 1__  
@@ -41,7 +41,7 @@ To convert simply set each color channel of 0-255 RGB to the 8BPP value for cons
 
 ### Color Bitmasks
 __Bytes: 4__  
-24 and 32 BPP color bitmasks, the size of the bitmap is locked to 4 bytes to standardize header size. As the file is read big-endian, 24 BPP can ignore the last byte. 8 BPP completely ignores this section of data, should be 0.
+24 and 32 BPP color bitmasks, the size of the bitmap is locked to 4 bytes to standardize header size. As the file is read little-endian, 24 BPP can ignore the alpha byte. 8 BPP completely ignores this section of data, should be 0.
 
 ### Flags
 __Bytes: 1__  
@@ -49,10 +49,10 @@ Each bit of this section of memory is a different configuration flag, as follows
 1. Run Length Encoding -> 1 if encoded, 0 if not. Means the ordered pixel index makes use of RLE store data.
 2. 8 or 16 bits are allocated for the color ID's, giving more possible colors but taking up more storage. 0 corresponds to 8 bits (1 byte) and 1 corresponds to 16 bits (2 Bytes).
 
-All bytes beyond this should be zero and ignored.
+All bits beyond this should be zero and ignored.
 
 ## Color ID definition
-The color ID is comprised of two components: the ID number and the corresponding color. The number of possible ID's is set in the flags section of the header, 255 with 8 bit or 65,536 with 16 bit, 16 is a highly unlikely flag due to the intent of the format.
+The color ID is comprised of two components: the ID number and the corresponding color. The number of possible ID's is set in the flags section of the header, 256 with 8 bit or 65,536 with 16 bit, 16 is a highly unlikely flag due to the intent of the format.
 
 ### Number of pairs
 __Bytes: 1-2__
