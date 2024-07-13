@@ -242,3 +242,7 @@ int spxiWrite(const char *path, char flags, SPXIHeader header, RGBA_Color *pixel
     CloseHandle(fileHandle);
     return 0;
 }
+
+int spxiRead(const char *target, SPXIHeader *fileInfoDest, Pixel *pixelInfoDest) {
+    return SUCCESSFUL_READ;
+}

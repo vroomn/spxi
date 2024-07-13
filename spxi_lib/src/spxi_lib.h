@@ -8,6 +8,9 @@
 // Linked list errors
 #define ALLOCATION_FAILED -4
 
+// Read-specific return codes
+#define SUCCESSFUL_READ 0;
+
 /* Specifies byte flags for controlling write logic*/
 // Allows the program to overwrite existing files
 #define OVERWRITE_OK 0x1
@@ -58,5 +61,7 @@ typedef struct _RGBA_Color {
 /* Currently only writes to unique files, not to existing ones 
    TODO: Write system to override files if present w/ different func*/
 extern int spxiWrite(const char *path, char flags, SPXIHeader header, RGBA_Color *pixels, unsigned int numPixels);
+
+extern int spxiRead(const char *target, SPXIHeader *fileInfoDest, Pixel *pixelInfoDest);
 
 #endif
